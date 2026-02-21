@@ -24,8 +24,8 @@ fi
 echo -e "${YELLOW}Test 1: Health Check${NC}"
 echo "GET $BASE_URL/health"
 response=$(curl -s -w "\n%{http_code}" $BASE_URL/health)
-status=$(echo "$response" | tail -n1)
-body=$(echo "$response" | head -n-1)
+status=$(echo "$response" | sed '$!d')
+body=$(echo "$response" | sed '$d')
 
 if [ "$status" == "200" ]; then
     echo -e "${GREEN}✓ Status: $status${NC}"
@@ -58,8 +58,8 @@ response=$(curl -s -w "\n%{http_code}" -X POST $BASE_URL/infer \
   -H "Content-Type: application/json" \
   -d "$inference_request")
 
-status=$(echo "$response" | tail -n1)
-body=$(echo "$response" | head -n-1)
+status=$(echo "$response" | sed '$!d')
+body=$(echo "$response" | sed '$d')
 
 if [ "$status" == "200" ]; then
     echo -e "${GREEN}✓ Status: $status${NC}"
@@ -82,8 +82,8 @@ response=$(curl -s -w "\n%{http_code}" -X POST $BASE_URL/infer \
   -H "Content-Type: application/json" \
   -d "$error_request")
 
-status=$(echo "$response" | tail -n1)
-body=$(echo "$response" | head -n-1)
+status=$(echo "$response" | sed '$!d')
+body=$(echo "$response" | sed '$d')
 
 if [ "$status" != "200" ]; then
     echo -e "${GREEN}✓ Correctly returned error status: $status${NC}"

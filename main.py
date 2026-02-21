@@ -94,32 +94,36 @@ def run_inference(
         model.to(DEVICE)
         logger.info("Model loaded in %.2f s - Device: %s", time.time() - t0, model.device)
     
-    logger.info("Tokenizing input ...")
-    t0 = time.time()
-    inputs = processor.apply_chat_template(
-        messages,
-        add_generation_prompt=True,
-        tokenize=True,
-        return_dict=True,
-        return_tensors="pt",
-    ).to(model.device)
-    logger.info("Tokenization done in %.2f s", time.time() - t0)
-    
-    logger.info("Generating output (max_new_tokens=40) ...")
-    t0 = time.time()
-    outputs = model.generate(**inputs, max_new_tokens=40)
-    logger.info("Generation done in %.2f s", time.time() - t0)
-    
-    decoded = processor.decode(outputs[0][inputs["input_ids"].shape[-1]:])
-    logger.info("Decoded output: %s", decoded)
-    
-    return {
-        "question": question,
-        "image_url": image_url,
-        "answer": decoded,
-        "model_id": MODEL_ID,
-        "device": str(model.device)
-    }
+    try:
+        logger.info("Tokenizing input with messages: %s", messages)
+        t0 = time.time()
+        inputs = processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(model.device)
+        logger.info("Tokenization done in %.2f s. Inputs: %s", time.time() - t0, inputs)
+        
+        logger.info("Generating output (max_new_tokens=40) ...")
+        t0 = time.time()
+        outputs = model.generate(**inputs, max_new_tokens=40)
+        logger.info("Generation done in %.2f s. Outputs: %s", time.time() - t0, outputs)
+        
+        decoded = processor.decode(outputs[0][inputs["input_ids"].shape[-1]:])
+        logger.info("Decoded output: %s", decoded)
+        
+        return {
+            "question": question,
+            "image_url": image_url,
+            "answer": decoded,
+            "model_id": MODEL_ID,
+            "device": str(model.device)
+        }
+    except Exception as e:
+        logger.error("Error during inference: %s", str(e), exc_info=True)
+        return {"error": str(e)}
 
 
 # ── Script Mode: Run directly ────────────────────────────
