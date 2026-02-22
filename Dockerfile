@@ -1,24 +1,31 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the dependencies file to the working directory
+# Install Python and system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.10 as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+
+# Copy requirements and install dependencies
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir requests
 
-# Install any needed dependencies specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy application code
+COPY app.py .
 
-# Copy the rest of the application's code to the working directory
-COPY . .
+# Expose port for API
+EXPOSE 8000
 
-# Make port 8080 available to the world outside this container
-EXPOSE 8080
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
 
-# Define environment variables
-ENV RUN_MODE=server
-ENV PORT=8080
-
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "main:app"]
+# Start the application
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
