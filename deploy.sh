@@ -52,7 +52,7 @@ gcloud config set project ${GCP_PROJECT_ID}
 
 # Step 3: Build Docker image
 echo -e "${YELLOW}Step 3: Building Docker image...${NC}"
-docker build -t ${IMAGE_URI} .
+docker build --platform=linux/amd64 -t ${IMAGE_URI} .
 
 # Step 4: Push image to Google Container Registry
 echo -e "${YELLOW}Step 4: Pushing image to GCR...${NC}"
