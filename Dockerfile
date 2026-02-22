@@ -15,7 +15,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt --upgrade torch transformers
+
+# Pre-download and cache the model
+RUN python -c "import traceback; from transformers import AutoProcessor, AutoModelForImageTextToText; model_id='datalab-to/chandra'; AutoProcessor.from_pretrained(model_id, cache_dir='/app/model'); AutoModelForImageTextToText.from_pretrained(model_id, cache_dir='/app/model')"
 
 # Copy application code
 COPY main.py .

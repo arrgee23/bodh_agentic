@@ -20,11 +20,27 @@ DEVICE = os.getenv("DEVICE", "cuda" if os.getenv("USE_GPU", "false").lower() == 
 PORT = int(os.getenv("PORT", "8080"))
 RUN_MODE = os.getenv("RUN_MODE", "script")  # "script" or "server"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
-)
+# ── GCP Logging Setup ──────────────────────────────────
+try:
+    import google.cloud.logging
+    client = google.cloud.logging.Client()
+    handler = client.get_default_handler()
+    # Get the root logger
+    root_logger = logging.getLogger()
+    # Remove any existing handlers
+    root_logger.handlers = []
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.INFO)
+    # Set the log level for the default http handler for google-api-core to ERROR
+    logging.getLogger('google.api_core.bidi').setLevel(logging.ERROR)
+    
+except ImportError:
+    print("Cloud Logging not set up. Install google-cloud-logging.")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
+    )
 logger = logging.getLogger("ChandraMain2")
 
 # Log environment info
@@ -85,12 +101,12 @@ def run_inference(
     if processor is None or model is None:
         logger.info("Loading processor (%s) ...", MODEL_ID)
         t0 = time.time()
-        processor = AutoProcessor.from_pretrained(MODEL_ID)
+        processor = AutoProcessor.from_pretrained(MODEL_ID, cache_dir="/app/model")
         logger.info("Processor loaded in %.2f s", time.time() - t0)
         
         logger.info("Loading model (%s) ...", MODEL_ID)
         t0 = time.time()
-        model = AutoModelForImageTextToText.from_pretrained(MODEL_ID)
+        model = AutoModelForImageTextToText.from_pretrained(MODEL_ID, cache_dir="/app/model")
         model.to(DEVICE)
         logger.info("Model loaded in %.2f s - Device: %s", time.time() - t0, model.device)
     
@@ -156,8 +172,8 @@ def create_server():
         if model_cache["model"] is None:
             logger.info("Loading model/processor for server mode (lazy loading)")
             t0 = time.time()
-            model_cache["processor"] = AutoProcessor.from_pretrained(MODEL_ID)
-            model_cache["model"] = AutoModelForImageTextToText.from_pretrained(MODEL_ID)
+            model_cache["processor"] = AutoProcessor.from_pretrained(MODEL_ID, cache_dir="/app/model")
+            model_cache["model"] = AutoModelForImageTextToText.from_pretrained(MODEL_ID, cache_dir="/app/model")
             model_cache["model"].to(DEVICE)
             model_cache["loaded"] = True
             logger.info("Model loaded in %.2f s", time.time() - t0)

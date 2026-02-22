@@ -45,7 +45,7 @@ IMAGE_URL="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 # Try local Docker build first (faster, no IAM issues)
 if command -v docker &> /dev/null; then
     echo "Using local Docker build..."
-    docker build -t $IMAGE_URL .
+    docker buildx build --platform linux/amd64 -t $IMAGE_URL .
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Docker image built successfully${NC}"
         echo "Pushing to Google Container Registry..."
